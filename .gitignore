@@ -1,0 +1,6 @@
+/venv
+__pycache/
+.env
+.idea
+.DS_Store
+.mypy_cache
