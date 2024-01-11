@@ -17,8 +17,8 @@ class Film(BaseModel):
 @router.get(
     "/{film_id}",
     response_model=Film,
-    summary="Film's search",
-    description="Fulltext film's search",
+    summary="Film's detail",
+    description="Get fiml by id",
     response_description="Film's name and rating",
     tags=["Fulltext search"],
 )

@@ -1,4 +1,5 @@
 import logging
+from contextlib import asynccontextmanager
 
 import uvicorn
 from elasticsearch import AsyncElasticsearch
@@ -22,21 +23,18 @@ app = FastAPI(
 )
 
 
-@app.on_event("startup")
-async def startup():
+@asynccontextmanager
+async def lifespan(app: FastAPI):
     redis.redis = Redis(host=config.REDIS_HOST, port=config.REDIS_PORT)
     elastic.es = AsyncElasticsearch(
         hosts=[f"{config.ELASTIC_HOST}:{config.ELASTIC_PORT}"]
     )
-
-
-@app.on_event("shutdown")
-async def shutdown():
+    yield
     await redis.redis.close()
     await elastic.es.close()
 
 
-app.include_router(films.router, prefix="/api/v1/films", tags=["films"])
+app.include_router(films.router, prefix="/api/v1/films", tags=["Films"])
 
 
 if __name__ == "__main__":
@@ -46,4 +44,5 @@ if __name__ == "__main__":
         port=8000,
         log_config=LOGGING,
         log_level=logging.DEBUG,
+        reload=True,
     )
