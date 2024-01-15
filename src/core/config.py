@@ -12,10 +12,10 @@ PROJECT_DESC = os.getenv("PROJECT_DESC", "Put your description here")
 PROJECT_VERSION = os.getenv("PROJECT_VERSION", "1.0.0")
 
 
-REDIS_HOST = os.getenv("REDIS_HOST", "redis")
+REDIS_HOST = os.getenv("REDIS_HOST", "127.0.0.1")
 REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
 
-ELASTIC_HOST = os.getenv("ELASTIC_HOST", "elasticsearch")
+ELASTIC_HOST = os.getenv("ELASTIC_HOST", "127.0.0.1")
 ELASTIC_PORT = int(os.getenv("ELASTIC_PORT", 9200))
 
 

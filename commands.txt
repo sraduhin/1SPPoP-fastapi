@@ -1,5 +1,0 @@
-# запустить redis локально
-docker run -d --rm \
---name redis-api \
--p 6379:6379 \
-redis:5.0.1

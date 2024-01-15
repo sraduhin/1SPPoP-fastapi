@@ -13,25 +13,27 @@ from core.logger import LOGGING
 from db import elastic, redis
 
 
-app = FastAPI(
-    title=config.PROJECT_NAME,
-    description=config.PROJECT_DESC,
-    version=config.PROJECT_VERSION,
-    docs_url="/api/openapi",
-    openapi_url="/api/openapi.json",
-    default_response_class=ORJSONResponse,
-)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     redis.redis = Redis(host=config.REDIS_HOST, port=config.REDIS_PORT)
     elastic.es = AsyncElasticsearch(
-        hosts=[f"{config.ELASTIC_HOST}:{config.ELASTIC_PORT}"]
+        hosts=[f"http://{config.ELASTIC_HOST}:{config.ELASTIC_PORT}"]
     )
     yield
     await redis.redis.close()
     await elastic.es.close()
+
+
+app = FastAPI(
+    title=config.PROJECT_NAME,
+    description=config.PROJECT_DESC,
+    version=config.PROJECT_VERSION,
+    docs_url="/api/openapi",
+    openapi_url="/api/openapi.json",
+    lifespan=lifespan,
+)
 
 
 app.include_router(films.router, prefix="/api/v1/films", tags=["Films"])
