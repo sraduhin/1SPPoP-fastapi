@@ -13,6 +13,8 @@ FILM_CACHE_EXPIRE_IN_SECONDS = 60 * 5  # 5 minutes
 
 
 class FilmService:
+    INDEX = "movies"
+
     def __init__(self, redis: Redis, elastic: AsyncElasticsearch):
         self.redis = redis
         self.elastic = elastic
@@ -28,27 +30,27 @@ class FilmService:
         return film
 
     async def get_by_params(self, **params) -> Optional[List[Film]]:
-
         films = await self._films_from_cache(json.dumps(params))
         if not films:
             films = await self._get_films_from_elastic(**params)
             if not films:
                 return None
-            data = {"films": films, "key": json.dumps(params)}
+            data = {
+                "films": films,
+                "key": self.INDEX + ":" + json.dumps(params),
+            }
             await self._put_films_to_cache(data)
 
         return films
 
     async def _get_film_from_elastic(self, film_id: str) -> Optional[Film]:
         try:
-            doc = await self.elastic.get(index="movies", id=film_id)
+            doc = await self.elastic.get(index=self.INDEX, id=film_id)
         except NotFoundError:
             return None
         return Film(**doc["_source"])
 
-    async def _get_films_from_elastic(
-            self, **params
-    ) -> Optional[List[Film]]:
+    async def _get_films_from_elastic(self, **params) -> Optional[List[Film]]:
         genres = params.get("genres")
         size = params.get("size")
         from_ = params.get("from_")
@@ -57,7 +59,7 @@ class FilmService:
             for genre in genres:
                 query["bool"]["must"].append({"term": {"genre": genre}})
             docs = await self.elastic.search(
-                index="movies", query=query, size=size, from_=from_
+                index=self.INDEX, query=query, size=size, from_=from_
             )
         except NotFoundError:
             return None
@@ -84,7 +86,9 @@ class FilmService:
             film.id, film.model_dump_json(), FILM_CACHE_EXPIRE_IN_SECONDS
         )
 
-    async def _put_films_to_cache(self, data: Dict[str, Union[str, List[Film]]]):
+    async def _put_films_to_cache(
+        self, data: Dict[str, Union[str, List[Film]]]
+    ):
         films = [film.model_dump_json() for film in data["films"]]
         await self.redis.set(
             data["key"], json.dumps(films), FILM_CACHE_EXPIRE_IN_SECONDS

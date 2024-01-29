@@ -3,10 +3,10 @@ from typing import Optional
 from pydantic import BaseModel
 
 
-class FilmResponse(BaseModel):
+class GenreResponse(BaseModel):
     id: str
     title: str
 
 
-class Film(FilmResponse):
+class Genre(GenreResponse):
     description: Optional[str]
