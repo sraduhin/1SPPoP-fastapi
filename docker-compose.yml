@@ -1,0 +1,34 @@
+version: '3'
+services:
+  app:
+    build:
+      context: .
+      dockerfile: ./docker/Dockerfile
+    container_name: api
+    ports:
+      - "8000:8000"
+    environment:
+      - ELASTIC_HOST=${ELASTIC_HOST}
+      - REDIS_HOST=${REDIS_HOST}
+    command: /entrypoint.sh
+    volumes:
+      - ./src:/opt/app
+    networks:
+      sharednetwork:
+        aliases:
+          - api.network
+
+  redis:
+    image: redis:${REDIS_VERSION}
+    container_name: ${REDIS_HOST}
+    volumes:
+      - ./docker/redis_data:/data
+    networks:
+      sharednetwork:
+        aliases:
+          - redis.network
+
+networks:
+  sharednetwork:
+    external: true
+    name: 1SPPoP-network
