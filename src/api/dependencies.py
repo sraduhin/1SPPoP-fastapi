@@ -13,7 +13,9 @@ def get_person_redis_repository(redis: Redis = Depends(get_redis)):
     return PersonRedisRepository(redis)
 
 
-def get_person_elastic_repository(elastic: AsyncElasticsearch = Depends(get_elastic)):
+def get_person_elastic_repository(
+    elastic: AsyncElasticsearch = Depends(get_elastic),
+):
     return PersonESRepository(elastic)
 
 
@@ -21,7 +23,9 @@ def get_genre_redis_repository(redis: Redis = Depends(get_redis)):
     return GenreRedisRepository(redis)
 
 
-def get_genre_elastic_repository(elastic: AsyncElasticsearch = Depends(get_elastic)):
+def get_genre_elastic_repository(
+    elastic: AsyncElasticsearch = Depends(get_elastic),
+):
     return GenreESRepository(elastic)
 
 
@@ -29,5 +33,7 @@ def get_film_redis_repository(redis: Redis = Depends(get_redis)):
     return FilmRedisRepository(redis)
 
 
-def get_film_elastic_repository(elastic: AsyncElasticsearch = Depends(get_elastic)):
+def get_film_elastic_repository(
+    elastic: AsyncElasticsearch = Depends(get_elastic),
+):
     return FilmESRepository(elastic)

@@ -38,13 +38,13 @@ async def film_details(
     response_description="Films with name and rating",
 )
 async def film_list(
-    service: Annotated[BaseService, Depends(film_service)],
+    # service: Annotated[BaseService, Depends(film_service)],
     paginator_params: Paginator = Depends(),
     genres: List[str] = Query(None),
 ) -> List[FilmResponse]:
     params = paginator_params.__dict__
     params["genres"] = genres
-    films = await service.get_by_params(params)
+    films = await FilmService().get_by_params(params)
     if not films:
         raise HTTPException(
             status_code=HTTPStatus.NOT_FOUND, detail="Films not found"

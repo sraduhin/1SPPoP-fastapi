@@ -1,9 +1,12 @@
 from functools import lru_cache
 from fastapi import Depends
-from api.dependencies import get_genre_elastic_repository, \
-    get_genre_redis_repository
+from api.dependencies import (
+    get_genre_elastic_repository,
+    get_genre_redis_repository,
+)
 from utils.repositories import RedisRepository, ESRepository
 from utils.service import BaseService
+
 
 @lru_cache
 def genre_service(

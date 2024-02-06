@@ -1,7 +1,7 @@
 import json
 from abc import ABC, abstractmethod
 from fastapi import Depends
-from typing import Optional, List
+from typing import Optional, List, Type
 
 from elasticsearch import AsyncElasticsearch, NotFoundError
 from redis.asyncio import Redis
@@ -11,7 +11,7 @@ from db.redis import get_redis
 from utils.models import AbstractModel
 
 
-class AbstractRepository(ABC):
+class ReadOnlyRepository(ABC):
     @abstractmethod
     async def get_one():
         raise NotImplementedError
@@ -21,8 +21,18 @@ class AbstractRepository(ABC):
         raise NotImplementedError
 
 
-class ESRepository(AbstractRepository):
-    model: AbstractModel = None
+class ReadWriteRepository(ReadOnlyRepository):
+    @abstractmethod
+    async def add_one():
+        raise NotImplementedError
+
+    @abstractmethod
+    async def add_all():
+        raise NotImplementedError
+
+
+class ESRepository(ReadOnlyRepository):
+    model: Type[AbstractModel] = None
     index: str = ""
 
     def __init__(self, elastic: AsyncElasticsearch):
@@ -54,8 +64,8 @@ class ESRepository(AbstractRepository):
         return [self.model(**doc["_source"]) for doc in docs["hits"]["hits"]]
 
 
-class RedisRepository(AbstractRepository):
-    model: AbstractModel = None
+class RedisRepository(ReadWriteRepository):
+    model: Type[AbstractModel] = None
     index: str = ""
     CACHE_EXPIRE_IN_SECONDS = 60 * 5  # 5 minutes
 
@@ -85,9 +95,7 @@ class RedisRepository(AbstractRepository):
             item.id, item.model_dump_json(), self.CACHE_EXPIRE_IN_SECONDS
         )
 
-    async def add_all(
-            self, params: dict, items: Optional[List[AbstractModel]]
-    ):
+    async def add_all(self, params: dict, items: Optional[List[AbstractModel]]):
         items = [item.model_dump_json() for item in items]
         cache_key = f"{self.index}:{json.dumps(params)}"
         await self.storage.set(

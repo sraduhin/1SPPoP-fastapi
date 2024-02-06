@@ -1,15 +1,12 @@
-from functools import lru_cache
 from typing import Optional, List
-from fastapi import Depends
-from api.dependencies import get_film_elastic_repository, \
-    get_film_redis_repository
 from schemas.genre import Genre
-from utils.repositories import RedisRepository, ESRepository
+from utils.repositories import ReadWriteRepository, ReadOnlyRepository
 
 
 class BaseService:
-
-    def __init__(self, redis_repo: RedisRepository, es_repo: ESRepository):
+    def __init__(
+        self, redis_repo: ReadWriteRepository, es_repo: ReadOnlyRepository
+    ):
         self.redis = redis_repo
         self.elastic = es_repo
 
