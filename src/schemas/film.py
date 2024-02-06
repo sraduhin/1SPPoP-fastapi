@@ -1,10 +1,9 @@
 from typing import Optional
 
-from pydantic import BaseModel
+from utils.models import AbstractModel
 
 
-class FilmResponse(BaseModel):
-    id: str
+class FilmResponse(AbstractModel):
     title: str
 
 

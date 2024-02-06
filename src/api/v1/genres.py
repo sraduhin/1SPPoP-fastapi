@@ -5,8 +5,9 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from schemas.genre import GenreResponse
 
-from services.genre import GenreService, genre_service
+from services.genre import genre_service
 from utils.paginator import Paginator
+from utils.service import BaseService
 
 router = APIRouter()
 
@@ -19,7 +20,7 @@ router = APIRouter()
     response_description="Genre's name",
 )
 async def genre_details(
-    genre_id: str, service: GenreService = Depends(genre_service)
+    genre_id: str, service: BaseService = Depends(genre_service)
 ) -> GenreResponse:
     genre = await service.get_by_id(genre_id)
     if not genre:
@@ -37,7 +38,7 @@ async def genre_details(
     response_description="Genres names",
 )
 async def genres_list(
-    service: Annotated[GenreService, Depends(genre_service)],
+    service: Annotated[BaseService, Depends(genre_service)],
     paginator_params: Paginator = Depends(),
 ) -> List[GenreResponse]:
     genres = await service.get_by_params(paginator_params.__dict__)

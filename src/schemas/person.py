@@ -1,10 +1,9 @@
 from typing import Optional
 
-from pydantic import BaseModel
+from utils.models import AbstractModel
 
 
-class PersonResponse(BaseModel):
-    id: str
+class PersonResponse(AbstractModel):
     name: str
 
 

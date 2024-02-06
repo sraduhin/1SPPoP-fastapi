@@ -5,9 +5,9 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 
 from schemas.film import FilmResponse
 
-from services.film import FilmService, film_service
+from services.film import film_service
 from utils.paginator import Paginator
-
+from utils.service import BaseService
 
 router = APIRouter()
 
@@ -20,7 +20,7 @@ router = APIRouter()
     response_description="Film's name and rating",
 )
 async def film_details(
-    film_id: str, service: FilmService = Depends(film_service)
+    film_id: str, service: BaseService = Depends(film_service)
 ) -> FilmResponse:
     film = await service.get_by_id(film_id)
     if not film:
@@ -38,7 +38,7 @@ async def film_details(
     response_description="Films with name and rating",
 )
 async def film_list(
-    service: Annotated[FilmService, Depends(film_service)],
+    service: Annotated[BaseService, Depends(film_service)],
     paginator_params: Paginator = Depends(),
     genres: List[str] = Query(None),
 ) -> List[FilmResponse]:
