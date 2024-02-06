@@ -3,10 +3,10 @@ from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from models.person import PersonResponse
+from schemas.person import PersonResponse
 
-from services.person import PersonService, get_person_service
-
+from services.person import PersonService, person_service
+from utils.paginator import Paginator
 
 router = APIRouter()
 
@@ -19,7 +19,7 @@ router = APIRouter()
     response_description="Person's full name",
 )
 async def person_details(
-    person_id: str, person_service: PersonService = Depends(get_person_service)
+    person_id: str, person_service: PersonService = Depends(person_service)
 ) -> PersonResponse:
     person = await person_service.get_by_id(person_id)
     if not person:
@@ -37,12 +37,10 @@ async def person_details(
     response_description="Persons full names",
 )
 async def persons_list(
-    size: int = 10,
-    from_: int = 0,
-    person_service: PersonService = Depends(get_person_service),
+    person_service: PersonService = Depends(person_service),
+    paginator_params: Paginator = Depends(),
 ) -> List[PersonResponse]:
-    params = {"size": size, "from_": from_}
-    persons = await person_service.get_by_params(**params)
+    persons = await person_service.get_by_params(paginator_params.__dict__)
     if not persons:
         raise HTTPException(
             status_code=HTTPStatus.NOT_FOUND, detail="Persons not found"

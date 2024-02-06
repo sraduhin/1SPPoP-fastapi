@@ -1,11 +1,12 @@
 from http import HTTPStatus
-from typing import List
+from typing import List, Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
-from models.film import FilmResponse
+from schemas.film import FilmResponse
 
-from services.film import FilmService, get_film_service
+from services.film import FilmService, film_service
+from utils.paginator import Paginator
 
 
 router = APIRouter()
@@ -19,9 +20,9 @@ router = APIRouter()
     response_description="Film's name and rating",
 )
 async def film_details(
-    film_id: str, film_service: FilmService = Depends(get_film_service)
+    film_id: str, service: FilmService = Depends(film_service)
 ) -> FilmResponse:
-    film = await film_service.get_by_id(film_id)
+    film = await service.get_by_id(film_id)
     if not film:
         raise HTTPException(
             status_code=HTTPStatus.NOT_FOUND, detail="Film not found"
@@ -37,13 +38,13 @@ async def film_details(
     response_description="Films with name and rating",
 )
 async def film_list(
+    service: Annotated[FilmService, Depends(film_service)],
+    paginator_params: Paginator = Depends(),
     genres: List[str] = Query(None),
-    size: int = 10,
-    from_: int = 0,
-    film_service: FilmService = Depends(get_film_service),
 ) -> List[FilmResponse]:
-    params = {"genres": genres or [], "size": size, "from_": from_}
-    films = await film_service.get_by_params(**params)
+    params = paginator_params.__dict__
+    params["genres"] = genres
+    films = await service.get_by_params(params)
     if not films:
         raise HTTPException(
             status_code=HTTPStatus.NOT_FOUND, detail="Films not found"

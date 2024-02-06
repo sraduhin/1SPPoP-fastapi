@@ -1,113 +1,43 @@
-import json
 from functools import lru_cache
-from typing import Optional, List, Union, Dict
-
-from elasticsearch import AsyncElasticsearch, NotFoundError
+from typing import Optional, List
 from fastapi import Depends
-from redis.asyncio import Redis
-from db.elastic import get_elastic
-from db.redis import get_redis
-from models.person import Person
-
-PERSON_CACHE_EXPIRE_IN_SECONDS = 60 * 5  # 5 minutes
+from api.dependencies import get_person_elastic_repository, \
+    get_person_redis_repository
+from schemas.genre import Genre
+from utils.repositories import AbstractRepository
 
 
 class PersonService:
-    INDEX = "persons"
+    def __init__(self, redis_repo: AbstractRepository, es_repo: AbstractRepository):
+        self.redis = redis_repo
+        self.elastic = es_repo
 
-    def __init__(self, redis: Redis, elastic: AsyncElasticsearch):
-        self.redis = redis
-        self.elastic = elastic
-
-    async def get_by_id(self, person_id: str) -> Optional[Person]:
-        person = await self._person_from_cache(person_id)
-        if not person:
-            person = await self._get_person_from_elastic(person_id)
-            if not person:
+    async def get_by_id(self, genre_id: str) -> Optional[Genre]:
+        genre = await self.redis.get_one(genre_id)
+        if not genre:
+            genre = await self.elastic.get_one(genre_id)
+            if not genre:
                 return None
-            await self._put_person_to_cache(person)
+            await self.redis.add_one(genre)
 
-        return person
+        return genre
 
-    async def get_by_params(self, **params) -> Optional[List[Person]]:
-        persons = await self._persons_from_cache(json.dumps(params))
-        if not persons:
-            persons = await self._get_persons_from_elastic(**params)
-            if not persons:
+    async def get_by_params(self, params) -> Optional[List[Genre]]:
+        print(params)
+        genres = await self.redis.get_all(params)
+        if not genres:
+            genres = await self.elastic.get_all(params)
+            if not genres:
                 return None
-            data = {
-                "persons": persons,
-                "key": self.INDEX + ":" + json.dumps(params),
-            }
-            await self._put_persons_to_cache(data)
+            await self.redis.add_all(params, genres)
 
-        return persons
-
-    async def _get_person_from_elastic(
-        self, person_id: str
-    ) -> Optional[Person]:
-        try:
-            doc = await self.elastic.get(index=self.INDEX, id=person_id)
-        except NotFoundError:
-            return None
-        return Person(**doc["_source"])
-
-    async def _get_persons_from_elastic(
-        self, **params
-    ) -> Optional[List[Person]]:
-        size = params.get("size")
-        from_ = params.get("from_")
-        try:
-            docs = await self.elastic.search(
-                index=self.INDEX, size=size, from_=from_
-            )
-        except NotFoundError:
-            return None
-        return [Person(**doc["_source"]) for doc in docs["hits"]["hits"]]
-
-    async def _person_from_cache(self, person_id: str) -> Optional[Person]:
-        data = await self.redis.get(person_id)
-        if not data:
-            return None
-
-        person = Person.model_validate_json(data)
-        return person
-
-    async def _persons_from_cache(self, key: str) -> Optional[List[Person]]:
-        data = await self.redis.get(key)
-        if not data:
-            return None
-
-        persons = [
-            Person.model_validate_json(person) for person in json.loads(data)
-        ]
-        return persons
-
-    async def _put_person_to_cache(self, person: Person):
-        await self.redis.set(
-            person.id, person.model_dump_json(), PERSON_CACHE_EXPIRE_IN_SECONDS
-        )
-
-    async def _put_persons_to_cache(
-        self, data: Dict[str, Union[str, List[Person]]]
-    ):
-        person = [person.model_dump_json() for person in data["persons"]]
-        await self.redis.set(
-            data["key"], json.dumps(person), PERSON_CACHE_EXPIRE_IN_SECONDS
-        )
+        return genres
 
 
 @lru_cache()
-def get_person_service(
-    redis: Redis = Depends(get_redis),
-    elastic: AsyncElasticsearch = Depends(get_elastic),
+def person_service(
+    redis_repo: AbstractRepository = Depends(get_person_redis_repository),
+    elastic_repo: AbstractRepository = Depends(get_person_elastic_repository),
 ) -> PersonService:
-    return PersonService(redis, elastic)
+    return PersonService(redis_repo, elastic_repo)
 
-
-@lru_cache()
-def get_person_service(
-    redis: Redis = Depends(get_redis),
-    elastic: AsyncElasticsearch = Depends(get_elastic),
-) -> PersonService:
-    return PersonService(redis, elastic)

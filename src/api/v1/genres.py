@@ -1,12 +1,12 @@
 from http import HTTPStatus
-from typing import List
+from typing import List, Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from models.genre import GenreResponse
+from schemas.genre import GenreResponse
 
-from services.genre import GenreService, get_genre_service
-
+from services.genre import GenreService, genre_service
+from utils.paginator import Paginator
 
 router = APIRouter()
 
@@ -19,9 +19,9 @@ router = APIRouter()
     response_description="Genre's name",
 )
 async def genre_details(
-    genre_id: str, genre_service: GenreService = Depends(get_genre_service)
+    genre_id: str, service: GenreService = Depends(genre_service)
 ) -> GenreResponse:
-    genre = await genre_service.get_by_id(genre_id)
+    genre = await service.get_by_id(genre_id)
     if not genre:
         raise HTTPException(
             status_code=HTTPStatus.NOT_FOUND, detail="Genre not found"
@@ -37,12 +37,10 @@ async def genre_details(
     response_description="Genres names",
 )
 async def genres_list(
-    size: int = 10,
-    from_: int = 0,
-    genre_service: GenreService = Depends(get_genre_service),
+    service: Annotated[GenreService, Depends(genre_service)],
+    paginator_params: Paginator = Depends(),
 ) -> List[GenreResponse]:
-    params = {"size": size, "from_": from_}
-    genres = await genre_service.get_by_params(**params)
+    genres = await service.get_by_params(paginator_params.__dict__)
     if not genres:
         raise HTTPException(
             status_code=HTTPStatus.NOT_FOUND, detail="Genres not found"
